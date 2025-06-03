@@ -1,0 +1,34 @@
+name: Windows Release
+
+on:
+  push:
+    tags:
+      - 'Windows-v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Extract version
+        id: extract_version
+        run: |
+          $version = $env:GITHUB_REF_NAME
+          echo "VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Zip Windows folder
+        run: Compress-Archive -Path Windows -DestinationPath ${{ env.VERSION }}.zip
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ github.ref_name }}
+          name: ${{ env.VERSION }}
+          artifacts: ${{ env.VERSION }}.zip
