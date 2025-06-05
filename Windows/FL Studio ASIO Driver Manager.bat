@@ -1,10 +1,8 @@
 @echo off
-title FL Studio ASIO Driver Manager
+mode con cols=70 lines=30
 color 0B
 
-setlocal EnableDelayedExpansion
-
-:: run as admin
+:: runs as admin
 net session >nul 2>&1
 if %errorlevel% neq 0 (
     echo Requesting administrative privileges..
@@ -12,28 +10,48 @@ if %errorlevel% neq 0 (
     exit /b
 )
 
+title FL Studio ASIO Driver Manager
+
+setlocal EnableDelayedExpansion
+
 :menu
 cls
-echo ------------------------------------------
-echo     FL Studio ASIO Driver Manager
-echo ------------------------------------------
-echo 1. Install/Update Driver
-echo 2. Uninstall Driver
-echo 3. Exit
-echo.
-set /p CHOICE="Select an option (1-3): "
+echo:
+echo:
+echo:
+echo:
+echo:
+echo                ---------------------------------------
+echo                     FL Studio ASIO Driver Manager
+echo                ---------------------------------------
+echo:
+echo                       [1] Install/Update Driver
+echo                       [2] Uninstall Driver
+echo                       [3] Exit
+echo:
+echo                ---------------------------------------
+echo:
+echo                Choose an option by pressing 1, 2 or 3:
+choice /C:123 /N
+set CHOICE=%errorlevel%
 
-if "%CHOICE%"=="1" goto install
-if "%CHOICE%"=="2" goto uninstall
-if "%CHOICE%"=="3" exit /b
+if %CHOICE%==1 goto install
+if %CHOICE%==2 goto uninstall
+if %CHOICE%==3 exit /b
 goto menu
 
 :install
 cls
-echo ------------------------------------------
-echo     FL Studio ASIO Driver Installer
-echo ------------------------------------------
+echo:
+echo:
+echo:
+echo:
+echo:
+echo                ---------------------------------------
+echo                     FL Studio ASIO Driver Manager
+echo                ---------------------------------------
 
+:: set variables
 set "target=%SystemRoot%\System32\ILWASAPI2ASIO_x64.dll"
 set "local=Drivers\ILWASAPI2ASIO_x64.dll"
 set "verLocal="
@@ -45,7 +63,7 @@ for /f "delims=" %%v in ('powershell -NoProfile -Command ^
     set "verLocal=%%v"
 )
 
-:: check installed version, if exists ofc
+:: get installed version
 if exist "%target%" (
     for /f "delims=" %%v in ('powershell -NoProfile -Command ^
       "$b=[IO.File]::ReadAllBytes('%target%'); $s=[Text.Encoding]::Unicode.GetString($b); if ($s -match 'FL Studio ASIO V[\d\.]+') { $matches[0] }"') do (
@@ -53,101 +71,125 @@ if exist "%target%" (
     )
 )
 
-echo Local version:     %verLocal%
+echo                Local version:     %verLocal%
 if defined verInstalled (
-    echo Installed version: %verInstalled%
+    echo                Installed version: %verInstalled%
 ) else (
-    echo No version currently installed.
+    echo:
+    echo                    No version currently installed.
+    echo:
+    echo:
+
 )
 
-:: compare versions
+:: check if driver is already installed
 if "%verLocal%"=="%verInstalled%" (
-    echo.
-    echo You already have %verInstalled% installed.
+    echo:
+    echo:
+    echo           You already have %verInstalled% installed.
+    echo:
+    echo:
+    echo:
+    echo:
+    echo                      Press any key to continue..
+    pause >nul
+    goto menu
+)
+
+echo:
+if defined verInstalled (
+    echo           Update to %verLocal%?
+) else (
+    echo              Install version %verLocal%? [y/n]
+    echo:
+)
+echo:
+choice /C:YN /N
+if !errorlevel! == 2 (
+    echo:
+    echo           Installation cancelled.
     pause
     goto menu
 )
 
-:: prompt for install or update
-if defined verInstalled (
-    echo.
-    set /p REPLACE="Update to %verLocal%? (Y/N): "
-    if /i "!REPLACE!"=="Y" (
-        set FLAG=/Y
-    ) else (
-        echo Installation cancelled.
-        pause
-        goto menu
-    )
-) else (
-    echo.
-    set /p INSTALL="Do you wish to install %verLocal%? (Y/N): "
-    if /i "!INSTALL!"=="Y" (
-        set FLAG=/Y
-    ) else (
-        echo Installation cancelled.
-        pause
-        goto menu
-    )
-)
-
 :: copy files
-echo.
-echo Copying files..
-copy %FLAG% Drivers\ILWASAPI2ASIO.DLL %SystemRoot%\System32\ >nul
-copy %FLAG% Drivers\ILWASAPI2ASIO_x64.DLL %SystemRoot%\System32\ >nul
+cls
+echo:
+echo:
+echo:
+echo:
+echo:
+echo                ---------------------------------------
+echo                     FL Studio ASIO Driver Manager
+echo                ---------------------------------------
+echo:
+echo                Copying files..
+:: copy files to system32
+copy /Y Drivers\ILWASAPI2ASIO.DLL %SystemRoot%\System32\ >nul
+copy /Y Drivers\ILWASAPI2ASIO_x64.DLL %SystemRoot%\System32\ >nul
 
-:: double-check
+:: check if files were copied
 set "postCopyVer="
 for /f "delims=" %%v in ('powershell -NoProfile -Command ^
   "$b=[IO.File]::ReadAllBytes('%target%'); $s=[Text.Encoding]::Unicode.GetString($b); if ($s -match 'FL Studio ASIO V[\d\.]+') { $matches[0] }"') do (
     set "postCopyVer=%%v"
 )
 
+:: check if files were copied
 if not "%postCopyVer%"=="%verLocal%" (
-    echo Error: File copy failed.
+    echo                Error: File copy failed.
     pause
     goto menu
 )
 
-:: register dlls
-echo Registering DLLs..
+:: register DLLs
+echo                Registering DLLs..
 regsvr32.exe /s %SystemRoot%\System32\ILWASAPI2ASIO.DLL
 regsvr32.exe /s %SystemRoot%\System32\ILWASAPI2ASIO_x64.DLL
 
 :: restart audio service
-echo Restarting Windows Audio Service
+echo                Restarting Windows Audio Service..
+:: stop audio service
 net stop Audiosrv >nul 2>&1
 if %errorlevel% neq 0 (
-    echo Failed to stop Audio Service.
+    echo                Failed to stop Audio Service.
     pause
     goto menu
 )
-call :LoadingBar "Stopping"
-
+:: start audio service
 net start Audiosrv >nul 2>&1
 if %errorlevel% neq 0 (
-    echo Error: Failed to start Audio Service.
+    echo                Error: Failed to start Audio Service.
     pause
     goto menu
 )
-call :LoadingBar "Starting"
 
-echo.
-echo Installation successful!
-pause
+echo:
+echo                Installation successful!
+echo:
+echo:
+echo:
+echo:
+echo                     Press any key to continue..
+pause >nul
 goto menu
 
+:: uninstall part
 :uninstall
 cls
-echo ------------------------------------------
-echo     FL Studio ASIO Driver Uninstaller
-echo ------------------------------------------
+echo:
+echo:
+echo:
+echo:
+echo:
+echo                --------------------------------------
+echo                     FL Studio ASIO Driver Manager
+echo                --------------------------------------
 
+:: get installed version
 set "target=%SystemRoot%\System32\ILWASAPI2ASIO_x64.dll"
 set "verInstalled="
-
-:: check if installed
+:: check if driver is installed
 if exist "%target%" (
     for /f "delims=" %%v in ('powershell -NoProfile -Command ^
       "$b=[IO.File]::ReadAllBytes('%target%'); $s=[Text.Encoding]::Unicode.GetString($b); if ($s -match 'FL Studio ASIO V[\d\.]+') { $matches[0] }"') do (
@@ -156,100 +198,81 @@ if exist "%target%" (
 )
 
 if not defined verInstalled (
-    echo No FL Studio ASIO Driver installed.
+    echo:
+    echo                  No FL Studio ASIO Driver installed.
+    echo:
+    echo:
+    echo:
+    echo:
+    echo                     Press any key to continue..
+    pause >nul
+    goto menu
+)
+
+echo:
+echo           You are about to uninstall %verInstalled%
+echo:
+echo                         Are you sure? [y/n]
+choice /C:YN /N
+if !errorlevel! == 2 (
+    echo:
+    echo                      Uninstallation cancelled.
+    echo:
+    echo:
+    echo:
+    echo:
+    echo                     Press any key to continue..
+    pause >nul
+    goto menu
+)
+
+cls
+echo:
+echo:
+echo:
+echo:
+echo:
+echo                --------------------------------------
+echo                     FL Studio ASIO Driver Manager
+echo                --------------------------------------
+echo:
+echo                Unregistering DLLs..
+:: unregister DLLs
+regsvr32.exe /u /s %SystemRoot%\System32\ILWASAPI2ASIO.DLL
+regsvr32.exe /u /s %SystemRoot%\System32\ILWASAPI2ASIO_x64.DLL
+
+:: delete files
+echo                Deleting files..
+del /f /q %SystemRoot%\System32\ILWASAPI2ASIO.DLL >nul 2>&1
+del /f /q %SystemRoot%\System32\ILWASAPI2ASIO_x64.DLL >nul 2>&1
+
+:: restart audio service
+echo                Restarting Windows Audio Service..
+:: stop audio service
+net stop Audiosrv >nul 2>&1
+if %errorlevel% neq 0 (
+    echo Failed to stop Audio Service.
     pause
     goto menu
 )
 
-echo.
-echo You are about to uninstall %verInstalled%
-echo.
-set /p CONFIRM="Are you sure you want to continue? (Y/N): "
-if /i "!CONFIRM!"=="Y" (
-    echo.
-    echo Unregistering DLLs..
-    regsvr32.exe /u /s %SystemRoot%\System32\ILWASAPI2ASIO.DLL
-    if %errorlevel% neq 0 (
-        echo Warning: Failed to unregister ILWASAPI2ASIO.DLL
-        echo Trying force unregister..
-        regsvr32.exe /u /s %SystemRoot%\System32\ILWASAPI2ASIO.DLL
-        if %errorlevel% neq 0 (
-            echo Error: Could not unregister ILWASAPI2ASIO.DLL
-            pause
-            goto menu
-        )
-    )
-    
-    regsvr32.exe /u /s %SystemRoot%\System32\ILWASAPI2ASIO_x64.DLL
-    if %errorlevel% neq 0 (
-        echo Warning: Failed to unregister ILWASAPI2ASIO_x64.DLL
-        echo Trying force unregister..
-        regsvr32.exe /u /s %SystemRoot%\System32\ILWASAPI2ASIO_x64.DLL
-        if %errorlevel% neq 0 (
-            echo Error: Could not unregister ILWASAPI2ASIO_x64.DLL
-            pause
-            goto menu
-        )
-    )
-
-    echo.
-    echo Deleting files..
-    del %SystemRoot%\System32\ILWASAPI2ASIO.DLL >nul 2>&1
-    if %errorlevel% neq 0 (
-        echo Warning: Failed to delete ILWASAPI2ASIO.DLL
-        echo Trying force delete..
-        del /f %SystemRoot%\System32\ILWASAPI2ASIO.DLL >nul 2>&1
-        if %errorlevel% neq 0 (
-            echo Error: Could not delete ILWASAPI2ASIO.DLL
-            pause
-            goto menu
-        )
-    )
-    
-    del %SystemRoot%\System32\ILWASAPI2ASIO_x64.DLL >nul 2>&1
-    if %errorlevel% neq 0 (
-        echo Warning: Failed to delete ILWASAPI2ASIO_x64.DLL
-        echo Trying force delete..
-        del /f %SystemRoot%\System32\ILWASAPI2ASIO_x64.DLL >nul 2>&1
-        if %errorlevel% neq 0 (
-            echo Error: Could not delete ILWASAPI2ASIO_x64.DLL
-            pause
-            goto menu
-        )
-    )
-
-    echo.
-    echo Restarting Windows Audio Service
-    net stop Audiosrv >nul 2>&1
-    if %errorlevel% neq 0 (
-        echo Failed to stop Audio Service.
-        pause
-        goto menu
-    )
-    call :LoadingBar "Stopping"
-
-    net start Audiosrv >nul 2>&1
-    if %errorlevel% neq 0 (
-        echo Error: Failed to start Audio Service.
-        pause
-        goto menu
-    )
-    call :LoadingBar "Starting"
-
-    echo.
-    echo Uninstallation successful!
-) else (
-    echo Uninstallation cancelled.
+:: start audio service
+net start Audiosrv >nul 2>&1
+if %errorlevel% neq 0 (
+    echo                Error: Failed to start Audio Service.
+    pause
+    goto menu
 )
-pause
+
+echo:
+echo                Uninstall successful!
+echo:
+echo:
+echo:
+echo:
+echo                      Press any key to continue..
+pause >nul
 goto menu
 
-:: loading bar
-:LoadingBar
-<nul set /p= %~1 Audio Service:
-for /L %%i in (1,1,20) do (
-    <nul set /p=.
-    ping -n 1 127.0.0.1 >nul
-)
 echo.
 exit /b
