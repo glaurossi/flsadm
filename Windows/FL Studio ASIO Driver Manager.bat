@@ -104,11 +104,25 @@ if defined verInstalled (
     echo:
 )
 echo:
-choice /C:YN /N
+choice /C:YN /N /M ""
 if !errorlevel! == 2 (
+    cls
     echo:
-    echo           Installation cancelled.
-    pause
+    echo:
+    echo:
+    echo:
+    echo:
+    echo                ---------------------------------------
+    echo                     FL Studio ASIO Driver Manager
+    echo                ---------------------------------------
+    echo:
+    echo                        Installation cancelled.
+    echo:
+    echo:
+    echo:
+    echo:
+    echo                      Press any key to continue..
+    pause >nul
     goto menu
 )
 
@@ -137,7 +151,7 @@ for /f "delims=" %%v in ('powershell -NoProfile -Command ^
 
 :: check if files were copied
 if not "%postCopyVer%"=="%verLocal%" (
-    echo                Error: File copy failed.
+    echo                   Error: File copy failed.
     pause
     goto menu
 )
@@ -182,9 +196,9 @@ echo:
 echo:
 echo:
 echo:
-echo                --------------------------------------
+echo                ---------------------------------------
 echo                     FL Studio ASIO Driver Manager
-echo                --------------------------------------
+echo                ---------------------------------------
 
 :: get installed version
 set "target=%SystemRoot%\System32\ILWASAPI2ASIO_x64.dll"
@@ -215,13 +229,22 @@ echo:
 echo                         Are you sure? [y/n]
 choice /C:YN /N
 if !errorlevel! == 2 (
-    echo:
-    echo                      Uninstallation cancelled.
-    echo:
+    cls
     echo:
     echo:
     echo:
-    echo                     Press any key to continue..
+    echo:
+    echo:
+    echo                ---------------------------------------
+    echo                     FL Studio ASIO Driver Manager
+    echo                ---------------------------------------
+    echo:
+    echo                       Uninstallation cancelled.
+    echo:
+    echo:
+    echo:
+    echo:
+    echo                      Press any key to continue..
     pause >nul
     goto menu
 )
@@ -232,9 +255,9 @@ echo:
 echo:
 echo:
 echo:
-echo                --------------------------------------
+echo                ---------------------------------------
 echo                     FL Studio ASIO Driver Manager
-echo                --------------------------------------
+echo                ---------------------------------------
 echo:
 echo                Unregistering DLLs..
 :: unregister DLLs
